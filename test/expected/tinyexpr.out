@@ -1,0 +1,33 @@
+create extension pltinyexpr;
+create function simple_addition() returns float8 as $$
+  1 + 3
+$$ language pltinyexpr;
+\echo
+
+select simple_addition();
+ simple_addition 
+-----------------
+               4
+(1 row)
+
+\echo
+
+create function more_complex() returns float8 as $$
+  abs(sqrt(3^2) - 5*2)
+$$ language pltinyexpr;
+\echo
+
+select more_complex();
+ more_complex 
+--------------
+            7
+(1 row)
+
+create function failure() returns float8 as $$
+  3 + trash=(
+$$ language pltinyexpr;
+\echo
+
+select failure();
+ERROR:  
+  3 + trash<- bad syntax here
