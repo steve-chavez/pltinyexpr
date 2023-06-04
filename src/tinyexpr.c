@@ -43,6 +43,8 @@ For log = natural log uncomment the next line. */
 #include <ctype.h>
 #include <limits.h>
 
+#include <postgres.h>
+
 #ifndef NAN
 #define NAN (0.0/0.0)
 #endif
@@ -88,7 +90,7 @@ static te_expr *new_expr(const int type, const te_expr *parameters[]) {
     const int arity = ARITY(type);
     const int psize = sizeof(void*) * arity;
     const int size = (sizeof(te_expr) - sizeof(void*)) + psize + (IS_CLOSURE(type) ? sizeof(void*) : 0);
-    te_expr *ret = malloc(size);
+    te_expr *ret = palloc(size);
     CHECK_NULL(ret);
 
     memset(ret, 0, size);
@@ -100,6 +102,8 @@ static te_expr *new_expr(const int type, const te_expr *parameters[]) {
     return ret;
 }
 
+void te_free(te_expr*);
+void te_free_parameters(te_expr*);
 
 void te_free_parameters(te_expr *n) {
     if (!n) return;
@@ -118,7 +122,7 @@ void te_free_parameters(te_expr *n) {
 void te_free(te_expr *n) {
     if (!n) return;
     te_free_parameters(n);
-    free(n);
+    pfree(n);
 }
 
 
@@ -235,6 +239,7 @@ static double divide(double a, double b) {return a / b;}
 static double negate(double a) {return -a;}
 static double comma(double a, double b) {(void)a; return b;}
 
+void next_token(state *);
 
 void next_token(state *s) {
     s->type = TOK_NULL;
@@ -454,7 +459,7 @@ static te_expr *factor(state *s) {
 
     if (ret->type == (TE_FUNCTION1 | TE_FLAG_PURE) && ret->function == negate) {
         te_expr *se = ret->parameters[0];
-        free(ret);
+        te_free(ret);
         ret = se;
         neg = 1;
     }
