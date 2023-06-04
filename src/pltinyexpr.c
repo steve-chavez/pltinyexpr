@@ -11,6 +11,25 @@
 
 PG_MODULE_MAGIC;
 
+PG_FUNCTION_INFO_V1(pltinyexpr_inline_handler);
+Datum pltinyexpr_inline_handler(PG_FUNCTION_ARGS)
+{
+	InlineCodeBlock *codeblock = (InlineCodeBlock *) DatumGetPointer(PG_GETARG_DATUM(0));
+	char* src = codeblock->source_text;
+
+	double res;
+	int error_pos;
+
+	res = te_interp(src, &error_pos);
+
+	if (error_pos > 0)
+		elog(ERROR, "%.*s<- bad syntax here", error_pos, src);
+	else
+		elog(INFO, "expression result is: %lf", res);
+
+	PG_RETURN_VOID();
+}
+
 PG_FUNCTION_INFO_V1(pltinyexpr_handler);
 Datum pltinyexpr_handler(PG_FUNCTION_ARGS)
 {

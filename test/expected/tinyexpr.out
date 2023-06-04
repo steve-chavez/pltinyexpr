@@ -24,10 +24,23 @@ select more_complex();
 (1 row)
 
 create function failure() returns float8 as $$
-  3 + trash=(
+  3 + trash
 $$ language pltinyexpr;
 \echo
 
 select failure();
 ERROR:  
   3 + trash<- bad syntax here
+\echo
+
+DO LANGUAGE pltinyexpr $$
+  5 * 4
+$$;
+INFO:  expression result is: 20.000000
+\echo
+
+DO LANGUAGE pltinyexpr $$
+  -)(
+$$;
+ERROR:  
+  -)<- bad syntax here

@@ -16,8 +16,18 @@ $$ language pltinyexpr;
 select more_complex();
 
 create function failure() returns float8 as $$
-  3 + trash=(
+  3 + trash
 $$ language pltinyexpr;
 \echo
 
 select failure();
+\echo
+
+DO LANGUAGE pltinyexpr $$
+  5 * 4
+$$;
+\echo
+
+DO LANGUAGE pltinyexpr $$
+  -)(
+$$;
