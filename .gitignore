@@ -3,3 +3,4 @@ results/
 *.so
 *.o
 *.bc
+.vimrc

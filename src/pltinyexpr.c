@@ -4,6 +4,7 @@
 #include <utils/builtins.h>
 #include <utils/varlena.h>
 #include <utils/syscache.h>
+#include <funcapi.h>
 
 #include <catalog/pg_proc.h>
 
@@ -23,7 +24,7 @@ Datum pltinyexpr_inline_handler(PG_FUNCTION_ARGS)
 	res = te_interp(src, &error_pos);
 
 	if (error_pos > 0)
-		elog(ERROR, "%.*s<- bad syntax here", error_pos, src);
+		ereport(ERROR, errmsg("%.*s<- bad syntax here", error_pos, src));
 	else
 		elog(INFO, "expression result is: %lf", res);
 
@@ -38,6 +39,10 @@ Datum pltinyexpr_handler(PG_FUNCTION_ARGS)
 	Datum prosrc;
 	char* src;
 	bool is_null;
+	int numargs;
+	Oid* argtypes;
+	char** argnames;
+	char* argmodes;
 
 	double res;
 	int error_pos;
@@ -52,10 +57,41 @@ Datum pltinyexpr_handler(PG_FUNCTION_ARGS)
 
 	src = text_to_cstring(DatumGetTextPP(prosrc));
 
-	res = te_interp(src, &error_pos);
+	numargs = get_func_arg_info(proc_tuple, &argtypes, &argnames, &argmodes);
 
-	if (error_pos > 0)
-		elog(ERROR, "%.*s<- bad syntax here", error_pos, src);
+	if(numargs > 0){
+		te_expr* expr;
+		te_variable* vars = palloc0(sizeof(te_variable) * numargs);
+		double* argvalues = palloc0(sizeof(double) * numargs);
+
+		for(int i = 0; i < numargs; i++){
+			argvalues[i] = DatumGetFloat8(fcinfo->args[i].value);
+			vars[i].name = argnames[i];
+			vars[i].address = &(argvalues[i]);
+		}
+
+		expr = te_compile(src, vars, numargs, &error_pos);
+
+		if (expr) {
+			res = te_eval(expr);
+			pfree(vars);
+			pfree(argvalues);
+			te_free(expr);
+		} else {
+			pfree(vars);
+			pfree(argvalues);
+			ereport(ERROR, errmsg("%.*s<- bad syntax here", error_pos, src));
+		}
+	} else {
+		te_expr* expr;
+		expr = te_compile(src, NULL, 0, &error_pos);
+		res = te_eval(expr);
+
+		if (expr)
+			te_free(expr);
+		else
+			ereport(ERROR, errmsg("%.*s<- bad syntax here", error_pos, src));
+	}
 
 	ReleaseSysCache(proc_tuple);
 
