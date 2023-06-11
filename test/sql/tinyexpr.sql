@@ -61,3 +61,48 @@ $$ language pltinyexpr;
 \echo
 
 select three_prms(3, 17, 90);
+
+create function invalid_func1() returns int as $$
+  3 + 5
+$$ language pltinyexpr;
+\echo
+
+create function invalid_func2(x float8) returns int as $$
+  x + 5
+$$ language pltinyexpr;
+\echo
+
+create function invalid_func3(out x float8) as $$
+  x + 5
+$$ language pltinyexpr;
+\echo
+
+create function invalid_func4(inout x float8) as $$
+  x + 5
+$$ language pltinyexpr;
+\echo
+
+create function invalid_func5(float8) returns float8 as $$
+  x + 5
+$$ language pltinyexpr;
+\echo
+
+create function invalid_func6(x float8, float8) returns float8 as $$
+  x + y + 5
+$$ language pltinyexpr;
+\echo
+
+create function invalid_func7(float8, y float8) returns float8 as $$
+  x + y + 5
+$$ language pltinyexpr;
+\echo
+
+create function invalid_func8() returns trigger as $$
+  3 + 5
+$$ language pltinyexpr;
+\echo
+
+create function invalid_func9() returns event_trigger as $$
+  3 + 5
+$$ language pltinyexpr;
+\echo
